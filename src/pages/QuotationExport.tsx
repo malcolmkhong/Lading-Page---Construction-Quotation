@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, Send, Save, FileCheck, Edit } from "lucide-react";
@@ -16,30 +15,24 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
-import { ClientFormData } from "./QuotationClient";
 import { constructionCategories } from "@/utils/constructionCategories";
-
-interface LineItem {
-  id: string;
-  category: string;
-  subcategory: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  total: number;
-  materialId?: string;
-  materialName?: string;
-}
+import { useQuotation } from "@/context/QuotationContext";
 
 const QuotationExportPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [clientData, setClientData] = useState<ClientFormData | null>(null);
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [taxRate, setTaxRate] = useState(0);
-  const [discount, setDiscount] = useState(0);
-  const [subtotal, setSubtotal] = useState(0);
+  const {
+    clientData,
+    lineItems,
+    subtotal,
+    taxAmount,
+    discountAmount,
+    total,
+    settings,
+    setClientData,
+    resetQuotation
+  } = useQuotation();
+
   const [quotationNumber, setQuotationNumber] = useState("");
   const [editingTerms, setEditingTerms] = useState(false);
   const [editingTAndC, setEditingTAndC] = useState(false);
@@ -52,8 +45,7 @@ const QuotationExportPage = () => {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     setQuotationNumber(`Q${year}${month}-${random}`);
     
-    const savedClientData = localStorage.getItem('quotationClientData');
-    if (!savedClientData) {
+    if (!clientData) {
       toast({
         title: "No client data found",
         description: "Please complete the client information first",
@@ -63,10 +55,7 @@ const QuotationExportPage = () => {
       return;
     }
     
-    setClientData(JSON.parse(savedClientData));
-    
-    const savedLineItems = localStorage.getItem('quotationLineItems');
-    if (!savedLineItems) {
+    if (lineItems.length === 0) {
       toast({
         title: "No line items found",
         description: "Please add items to your quotation first",
@@ -75,18 +64,6 @@ const QuotationExportPage = () => {
       navigate("/quotation/items");
       return;
     }
-    
-    const items = JSON.parse(savedLineItems);
-    setLineItems(items);
-    
-    const total = items.reduce((sum: number, item: LineItem) => sum + item.total, 0);
-    setSubtotal(total);
-    
-    const savedTaxRate = localStorage.getItem('quotationTaxRate');
-    const savedDiscount = localStorage.getItem('quotationDiscount');
-    
-    if (savedTaxRate) setTaxRate(JSON.parse(savedTaxRate));
-    if (savedDiscount) setDiscount(JSON.parse(savedDiscount));
 
     // Load saved T&C if available, otherwise use default
     const savedTAndC = localStorage.getItem('quotationTermsAndConditions');
@@ -123,20 +100,8 @@ const QuotationExportPage = () => {
 12. CLEAN-UP: Basic clean-up is included, but not detailed or professional cleaning services.`
       );
     }
-  }, [navigate, toast]);
+  }, [clientData, lineItems, navigate, toast]);
   
-  const calculateTax = () => {
-    return subtotal * (taxRate / 100);
-  };
-
-  const calculateDiscount = () => {
-    return subtotal * (discount / 100);
-  };
-
-  const calculateTotal = () => {
-    return subtotal + calculateTax() - calculateDiscount();
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ms-MY', {
       style: 'currency',
@@ -179,10 +144,7 @@ const QuotationExportPage = () => {
   };
   
   const handleNewQuotation = () => {
-    localStorage.removeItem('quotationClientData');
-    localStorage.removeItem('quotationLineItems');
-    localStorage.removeItem('quotationTaxRate');
-    localStorage.removeItem('quotationDiscount');
+    resetQuotation();
     localStorage.removeItem('quotationTermsAndConditions');
     
     navigate("/quotation/client");
@@ -209,6 +171,8 @@ const QuotationExportPage = () => {
       description: "Terms & Conditions have been updated successfully",
     });
   };
+
+  if (!clientData) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,7 +216,7 @@ const QuotationExportPage = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">TOTAL</p>
-                  <p className="text-2xl font-bold text-primary">{formatCurrency(calculateTotal())}</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(total)}</p>
                 </div>
               </div>
             </CardHeader>
@@ -348,18 +312,18 @@ const QuotationExportPage = () => {
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Tax ({taxRate}%):</span>
-                    <span>{formatCurrency(calculateTax())}</span>
+                    <span>Tax ({settings.taxRate}%):</span>
+                    <span>{formatCurrency(taxAmount)}</span>
                   </div>
                   
                   <div className="flex justify-between">
-                    <span>Discount ({discount}%):</span>
-                    <span>-{formatCurrency(calculateDiscount())}</span>
+                    <span>Discount ({settings.discount}%):</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                   
                   <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
                     <span>Total:</span>
-                    <span>{formatCurrency(calculateTotal())}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +27,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useQuotation } from "@/context/QuotationContext";
+import { ClientData } from "@/types";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -45,6 +47,7 @@ export type ClientFormData = z.infer<typeof formSchema>;
 const QuotationClientPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setClientData, clientData } = useQuotation();
   
   const form = useForm<ClientFormData>({
     resolver: zodResolver(formSchema),
@@ -60,9 +63,16 @@ const QuotationClientPage = () => {
     },
   });
 
+  // Load existing data if available
+  useEffect(() => {
+    if (clientData) {
+      form.reset(clientData);
+    }
+  }, [clientData, form]);
+
   const onSubmit = (data: ClientFormData) => {
-    // Save client data to localStorage
-    localStorage.setItem('quotationClientData', JSON.stringify(data));
+    // Save client data to context
+    setClientData(data as ClientData);
     
     // Navigate to the next step
     navigate("/quotation/items");

@@ -10,25 +10,28 @@ import Quotation from "./pages/Quotation";
 import QuotationClient from "./pages/QuotationClient";
 import QuotationItems from "./pages/QuotationItems";
 import QuotationExport from "./pages/QuotationExport";
+import { QuotationProvider } from "@/context/QuotationContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/quotation" element={<Quotation />} />
-          <Route path="/quotation/client" element={<QuotationClient />} />
-          <Route path="/quotation/items" element={<QuotationItems />} />
-          <Route path="/quotation/export" element={<QuotationExport />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <QuotationProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/quotation" element={<Quotation />} />
+            <Route path="/quotation/client" element={<QuotationClient />} />
+            <Route path="/quotation/items" element={<QuotationItems />} />
+            <Route path="/quotation/export" element={<QuotationExport />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </QuotationProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
